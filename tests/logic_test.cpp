@@ -140,6 +140,29 @@ static void TestFoodNeverSpawnsInsideSnake()
 }
 
 /**
+ * @brief The difficulty curve starts at Config::StartMoveInterval, decreases as
+ *        the score rises, and is clamped at Config::MinMoveInterval.
+ */
+static void TestMoveInterval()
+{
+    // No score yet: exactly the configured starting pace.
+    assert(ComputeMoveInterval(0) == Config::StartMoveInterval);
+
+    // More points always means a shorter interval (a faster snake).
+    assert(ComputeMoveInterval(200) < ComputeMoveInterval(100));
+
+    // The floor is hit at 400 points: (0.15 - 0.07) / 0.0002 = 400.
+    // A tiny tolerance absorbs float rounding at the exact boundary.
+    assert(ComputeMoveInterval(400) <= Config::MinMoveInterval + 1e-3f);
+
+    // The clamp is one-sided: never slower than the floor, never faster than it.
+    assert(ComputeMoveInterval(1000000) >= Config::MinMoveInterval);
+    assert(ComputeMoveInterval(1000000) == Config::MinMoveInterval);
+
+    std::printf("move interval ok\n");
+}
+
+/**
  * @brief ResetRun() zeroes the counter and each AddFood() awards
  *        Config::ScorePerFood points.
  */
@@ -168,6 +191,7 @@ int main()
     TestWallCollision();
     TestSelfCollision();
     TestFoodNeverSpawnsInsideSnake();
+    TestMoveInterval();
     TestScore();
 
     std::printf("ALL LOGIC TESTS PASSED\n");

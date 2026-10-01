@@ -12,6 +12,7 @@ A classic Snake game clone written in C++17 using [Raylib](https://www.raylib.co
 - Persistent high score saved to `bin/highscore.txt`
 - Sound effects generated procedurally in code (no asset files needed)
 - Reversal (180 degree) input is rejected, with a 2-deep input queue for responsive turning
+- F1 teaching overlay showing head/tail cells, the queued turns, and the move timer
 
 ## Controls
 
@@ -22,6 +23,7 @@ A classic Snake game clone written in C++17 using [Raylib](https://www.raylib.co
 | P | Pause / resume |
 | Esc | Pause (while playing) / back to menu |
 | R | Restart |
+| F1 | Toggle the debug/teaching overlay |
 
 ## Building
 
@@ -34,6 +36,7 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib
 Then, from an MSYS2 UCRT64 shell in the project folder:
 
 ```
+make help     # list the available targets
 make          # build bin/snake.exe (also copies glfw3.dll and libwinpthread-1.dll into bin/)
 make run      # build and play
 make test     # build and run the headless logic tests
@@ -43,6 +46,16 @@ make clean    # remove bin/ and build/
 In VS Code, `Ctrl+Shift+B` runs the default build task, and the `run`, `test`, `clean` tasks are available under Terminal > Run Task. Pressing F5 debugs the game with GDB.
 
 All build output goes to two generated folders: object files and dependency files in `build/`, and the executable, runtime DLLs, test binary, and `highscore.txt` in `bin/`. Nothing in either folder is tracked by git, so `bin/snake.exe` can also be double-clicked: `make` copies the required DLLs next to it.
+
+## Learning and teaching
+
+The project is written to be read as well as run. Three guides live in `docs/`:
+
+- **[docs/TEACHING.md](docs/TEACHING.md)** — guided reading order, the core algorithms explained with diagrams, a concept map from each file to the C++ topics it demonstrates, graded exercises, and viva questions with answers.
+- **[docs/BUILD.md](docs/BUILD.md)** — how the toolchain and the `Makefile` work, and a troubleshooting table for the errors beginners hit first.
+- **[docs/GLOSSARY.md](docs/GLOSSARY.md)** — the C++ terms used in this codebase, each defined with an example drawn from the project.
+
+Press **F1** in game to show the debug overlay: it prints the head and tail cells, the queued turns, and the live move timer, which makes the algorithms below observable at runtime.
 
 ## Project structure
 
@@ -60,7 +73,11 @@ SnakeGame/
 │   ├── Game.cpp            # input, timing, collisions, HUD, overlays
 │   ├── Snake.cpp / Food.cpp / Score.cpp / Audio.cpp
 ├── tests/
-│   └── logic_test.cpp      # headless tests for movement, collisions, spawn, scoring
+│   └── logic_test.cpp      # headless tests for movement, collisions, spawn, timing, scoring
+├── docs/
+│   ├── TEACHING.md         # guided tour, diagrams, exercises, viva Q&A
+│   ├── BUILD.md            # toolchain + Makefile explained, troubleshooting
+│   └── GLOSSARY.md         # C++ terms as used in this codebase
 ├── .gitattributes          # force LF line endings (keeps the Makefile valid)
 ├── .gitignore              # ignores build/, bin/, and OS/editor noise
 ├── .vscode/                # build, run, test, and debug configuration
@@ -81,4 +98,6 @@ SnakeGame/
 
 ## Testing
 
-`make test` runs headless assertions covering: initial state, reversal rejection, growth, wall collision, self collision, food spawn exclusion (500 iterations), and score accounting.
+`make test` runs headless assertions covering: initial state, reversal rejection, growth, wall collision, self collision, food spawn exclusion (500 iterations), the difficulty curve (start value, monotonicity, and the 400-point floor), and score accounting.
+
+The tests link only the entity logic — no window or audio device — which is why they can run in seconds and prove the rules are correct independently of the renderer.

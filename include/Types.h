@@ -108,3 +108,38 @@ inline bool AreOpposite(Direction first, Direction second)
     Position b = DirectionOffset(second);
     return a.x == -b.x && a.y == -b.y;
 }
+
+/**
+ * @brief Whether a cell lies inside the play grid.
+ *
+ * The single source of truth for bounds checks: the game applies it to the
+ * predicted head *before* stepping, while Snake::HitsWall applies it to the
+ * current head. Keeping one implementation means a resize of the board only
+ * needs a change here (through Config).
+ *
+ * @param cell Cell to test.
+ * @return true when 0 <= x < GridWidth and 0 <= y < GridHeight.
+ */
+inline bool IsWithinGrid(const Position& cell)
+{
+    return cell.x >= 0 && cell.x < Config::GridWidth
+        && cell.y >= 0 && cell.y < Config::GridHeight;
+}
+
+/**
+ * @brief Seconds between moves for a given score — the difficulty curve.
+ *
+ * Written as a free function rather than a method so it can be unit-tested
+ * without a Game (and therefore without a window).
+ *
+ * @param score Points scored in the current run.
+ * @return Config::StartMoveInterval shrunk by Config::ScoreSpeedFactor per
+ *         point, clamped at Config::MinMoveInterval. The floor is reached at
+ *         400 points (40 foods): (0.15 - 0.07) / 0.0002 = 400.
+ */
+inline float ComputeMoveInterval(int score)
+{
+    const float interval = Config::StartMoveInterval - score * Config::ScoreSpeedFactor;
+
+    return interval < Config::MinMoveInterval ? Config::MinMoveInterval : interval;
+}

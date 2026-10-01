@@ -19,7 +19,10 @@ OBJS    := $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
 DEPS    := $(OBJS:.o=.d)
 HEADERS := $(wildcard $(INCDIR)/*.h)
 
-.PHONY: all run test clean
+.PHONY: all run test clean help
+
+# Make runs this when invoked with no target.
+.DEFAULT_GOAL := all
 
 all: $(TARGET)
 
@@ -33,7 +36,8 @@ $(TARGET): $(OBJS) | $(BINDIR)
 		fi; \
 	done
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp $(HEADERS) | $(BUILDDIR)
+# Per-object dependencies come from the .d files written by -MMD (-include below).
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 run: $(TARGET)
@@ -53,6 +57,23 @@ $(BUILDDIR):
 
 $(BINDIR):
 	mkdir -p $(BINDIR)
+
+help:
+	@echo "Snake - make targets:"
+	@echo "  make (or make all)   build everything into bin/"
+	@echo "  make run             build, then start the game"
+	@echo "  make test            build and run the headless logic tests"
+	@echo "  make clean           delete the generated build/ and bin/ folders"
+	@echo "  make help            show this message"
+	@echo ""
+	@echo "Output layout:"
+	@echo "  build/   object and dependency files (never edit these)"
+	@echo "  bin/     snake.exe, runtime DLLs, logic_test.exe, highscore.txt"
+	@echo ""
+	@echo "Files:"
+	@echo "  include/ public headers (the interfaces, documented with Doxygen)"
+	@echo "  src/     implementations"
+	@echo "  tests/   logic tests (run them with make test)"
 
 clean:
 	rm -rf $(BUILDDIR) $(BINDIR)

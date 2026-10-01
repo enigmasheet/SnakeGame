@@ -170,3 +170,8 @@ std::size_t Snake::GetLength() const
 {
     return body.size();
 }
+
+const std::deque<Direction>& Snake::GetPendingDirections() const
+{
+    return pendingDirections;
+}

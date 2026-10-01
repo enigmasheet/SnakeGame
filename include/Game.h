@@ -47,10 +47,17 @@ public:
     void Draw();
 
 private:
-    /** @brief Full reset into GameState::Playing: new snake, fresh food, zeroed score. */
+    /**
+     * @brief Restores a fresh board (snake, food, score, timers) and parks the
+     *        state machine on @p next.
+     * @param next State to enter: GameState::Playing to start, GameState::Menu to idle.
+     */
+    void ResetBoard(GameState next);
+
+    /** @brief Full reset into GameState::Playing. */
     void StartRun();
 
-    /** @brief Full reset into GameState::Menu. Identical to StartRun() apart from the final state. */
+    /** @brief Full reset into GameState::Menu. */
     void GoToMenu();
 
     /** @brief Handles death: commits the high score if beaten, plays the jingle, and enters GameState::GameOver. */
@@ -81,6 +88,7 @@ private:
     void DrawMenuOverlay() const;     /**< Title, controls, and blinking start prompt. */
     void DrawPauseOverlay() const;    /**< Pause card and its keys. */
     void DrawGameOverOverlay() const; /**< Final score, possible "new best", and keys. */
+    void DrawDebugOverlay() const;    /**< Teaching overlay (toggled with F1): entities, queue, timer. */
 
     Snake snake;   /**< Player-controlled entity. */
     Food food;     /**< Collectible; respawns on every bite. */
@@ -90,4 +98,5 @@ private:
     GameState state; /**< Current state machine node. */
     float moveTimer; /**< Seconds accumulated toward the next move. */
     bool newRecord;  /**< Set when FinishRun() beat the previous high score. */
+    bool showDebug;  /**< Whether the F1 teaching overlay is visible. */
 };

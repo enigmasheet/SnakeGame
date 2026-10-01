@@ -93,6 +93,12 @@ public:
     /** @brief Segment count, always >= Config::InitialSnakeLength. */
     std::size_t GetLength() const;
 
+    /**
+     * @brief Turns waiting to be applied, oldest first (at most two).
+     * @return Read-only view used by the F1 debug overlay; empty when no turn is buffered.
+     */
+    const std::deque<Direction>& GetPendingDirections() const;
+
 private:
     std::vector<Position> body;              /**< Segments; front() is the head. */
     Direction direction;                     /**< Direction applied by the most recent Step(). */
