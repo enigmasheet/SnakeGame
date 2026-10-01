@@ -1,0 +1,16 @@
+# Normalize text files to LF in the repository.
+# Without this, core.autocrlf=true would check out the Makefile with CRLF
+# and GNU make would fail with "missing separator".
+* text=auto
+
+Makefile text eol=lf
+*.sh     text eol=lf
+*.cpp    text eol=lf
+*.h      text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+
+# Windows binaries are never line-translated
+*.exe binary
+*.dll binary
+*.a   binary

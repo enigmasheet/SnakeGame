@@ -1,0 +1,84 @@
+# Snake
+
+A classic Snake game clone written in C++17 using [Raylib](https://www.raylib.com/) for rendering, input, and audio.
+
+## Features
+
+- Grid-based snake movement with WASD and arrow keys
+- Food spawning that never overlaps the snake
+- Growth, scoring, and wall / self collision detection
+- Game states: main menu, playing, paused, game over
+- Speed increases as your score grows (0.15s down to 0.07s per move)
+- Persistent high score saved to `bin/highscore.txt`
+- Sound effects generated procedurally in code (no asset files needed)
+- Reversal (180 degree) input is rejected, with a 2-deep input queue for responsive turning
+
+## Controls
+
+| Key | Action |
+| --- | --- |
+| Arrow keys / WASD | Steer the snake |
+| Enter / Space | Start game / restart after game over |
+| P | Pause / resume |
+| Esc | Pause (while playing) / back to menu |
+| R | Restart |
+
+## Building
+
+Requirements: MSYS2 with the UCRT64 toolchain and Raylib.
+
+```
+pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib
+```
+
+Then, from an MSYS2 UCRT64 shell in the project folder:
+
+```
+make          # build bin/snake.exe (also copies glfw3.dll and libwinpthread-1.dll into bin/)
+make run      # build and play
+make test     # build and run the headless logic tests
+make clean    # remove bin/ and build/
+```
+
+In VS Code, `Ctrl+Shift+B` runs the default build task, and the `run`, `test`, `clean` tasks are available under Terminal > Run Task. Pressing F5 debugs the game with GDB.
+
+All build output goes to two generated folders: object files and dependency files in `build/`, and the executable, runtime DLLs, test binary, and `highscore.txt` in `bin/`. Nothing in either folder is tracked by git, so `bin/snake.exe` can also be double-clicked: `make` copies the required DLLs next to it.
+
+## Project structure
+
+```
+SnakeGame/
+├── include/                # public headers
+│   ├── Game.h              # state machine: menu / playing / paused / game over
+│   ├── Snake.h             # body vector, movement, growth, drawing, collision checks
+│   ├── Food.h              # position, random spawn (never inside the snake), drawing
+│   ├── Score.h             # current score, high score load/save
+│   ├── Audio.h             # audio device and procedurally generated sound effects
+│   └── Types.h             # Position struct, Direction/GameState enums, grid config
+├── src/                    # implementations
+│   ├── main.cpp            # window setup and the game loop (input -> update -> draw)
+│   ├── Game.cpp            # input, timing, collisions, HUD, overlays
+│   ├── Snake.cpp / Food.cpp / Score.cpp / Audio.cpp
+├── tests/
+│   └── logic_test.cpp      # headless tests for movement, collisions, spawn, scoring
+├── .gitattributes          # force LF line endings (keeps the Makefile valid)
+├── .gitignore              # ignores build/, bin/, and OS/editor noise
+├── .vscode/                # build, run, test, and debug configuration
+├── Makefile
+├── README.md
+├── build/                  # generated: object and dependency files
+└── bin/                    # generated: snake.exe, DLLs, logic_test.exe, highscore.txt
+```
+
+## Design notes
+
+- **Grid, not pixels.** The snake and food live on a 30 x 20 grid of 25 px cells; pixel coordinates are only computed at draw time (`x * CellSize`). Collision detection becomes simple integer equality.
+- **Snake body** is a `std::vector<Position>`. Each move inserts a new head at the front and removes the tail, unless food was eaten, which grows it by one.
+- **Movement timing** is decoupled from rendering: the game draws at 60 FPS but only steps the snake when the accumulated timer exceeds the current move interval, which shrinks as the score rises.
+- **Input queue.** Direction changes are queued (max 2) and validated against the last queued direction, so quick double-turns work while 180 degree reversals are rejected.
+- **Collision order.** The next head position is predicted first (wall check), then the snake steps, then the food and self-collision checks run against the updated body so moving into the cell the tail just vacated is legal.
+- **Sound effects** are synthesized as decaying sine waves at startup and loaded with `LoadSoundFromWave`, so no binary assets are required.
+
+## Testing
+
+`make test` runs headless assertions covering: initial state, reversal rejection, growth, wall collision, self collision, food spawn exclusion (500 iterations), and score accounting.

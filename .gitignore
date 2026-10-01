@@ -1,0 +1,27 @@
+# Build output
+/build/
+/bin/
+*.o
+*.d
+*.exe
+*.a
+
+# Runtime data
+highscore.txt
+
+# MSYS2 DLLs copied in by the Makefile
+glfw3.dll
+libwinpthread-1.dll
+
+# Editor
+.vscode/*
+!.vscode/c_cpp_properties.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.code-workspace
+.vs/
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store
