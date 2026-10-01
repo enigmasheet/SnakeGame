@@ -79,11 +79,19 @@ Game::Game()
     , newRecord(false)
     , showDebug(false)
 {
+    // The grid is static, so it is painted once here rather than every frame.
+    BuildBoardTexture();
+
     // Place the first food immediately so the menu already shows a live board.
     food.Spawn(snake.GetBody());
 }
 
-Game::~Game() = default;
+Game::~Game()
+{
+    // Must happen before CloseWindow() destroys the GL context that owns it;
+    // main.cpp guarantees that by declaring Game in an inner scope.
+    UnloadRenderTexture(boardTexture);
+}
 
 void Game::HandleInput()
 {
@@ -304,18 +312,24 @@ float Game::GetMoveInterval() const
     return ComputeMoveInterval(score.GetCurrent());
 }
 
-void Game::DrawGrid() const
+void Game::BuildBoardTexture()
 {
+    // Paint the checkerboard and border into a texture exactly once. The board
+    // never changes, so DrawGrid() can then blit it instead of issuing
+    // GridWidth * GridHeight DrawRectangle() calls every frame.
+    boardTexture = LoadRenderTexture(Config::WindowWidth, Config::GridHeight * Config::CellSize);
+
+    BeginTextureMode(boardTexture);
+    ClearBackground(Background);
+
     for (int row = 0; row < Config::GridHeight; row++)
     {
         for (int column = 0; column < Config::GridWidth; column++)
         {
-            // Checkerboard: the parity of row+column picks the shade, giving a
-            // 2D alternation from a single modulo.
             const Color cellColor = (row + column) % 2 == 0 ? BoardColor : BoardColorAlt;
 
             DrawRectangle(column * Config::CellSize,
-                          Config::HudHeight + row * Config::CellSize,
+                          row * Config::CellSize,
                           Config::CellSize,
                           Config::CellSize,
                           cellColor);
@@ -323,10 +337,24 @@ void Game::DrawGrid() const
     }
 
     DrawRectangleLines(0,
-                       Config::HudHeight,
+                       0,
                        Config::WindowWidth,
                        Config::GridHeight * Config::CellSize,
                        BorderColor);
+    EndTextureMode();
+}
+
+void Game::DrawGrid() const
+{
+    // Framebuffers are bottom-up in OpenGL, so the source rectangle uses a
+    // negative height to flip the texture the right way up while copying it.
+    const Rectangle source{0.0f,
+                           0.0f,
+                           static_cast<float>(Config::WindowWidth),
+                           -static_cast<float>(Config::GridHeight * Config::CellSize)};
+    const Vector2 dest{0.0f, static_cast<float>(Config::HudHeight)};
+
+    DrawTextureRec(boardTexture.texture, source, dest, WHITE);
 }
 
 void Game::DrawHud() const
@@ -360,7 +388,7 @@ void Game::DrawMenuOverlay() const
     DrawCenteredText("CONTROLS", 380, 22, BestText);
     DrawCenteredText("ARROWS / WASD   MOVE", 418, 20, PlainText);
     DrawCenteredText("P / ESC         PAUSE", 448, 20, PlainText);
-    DrawCenteredText("R               PLAY AGAIN", 478, 20, PlainText);
+    DrawCenteredText("R               PLAY", 478, 20, PlainText);
     DrawCenteredText("F1              DEBUG OVERLAY", 508, 20, MutedText);
 }
 

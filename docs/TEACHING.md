@@ -96,12 +96,14 @@ classDiagram
         -Audio audio
         -GameState state
         -float moveTimer
+        -RenderTexture2D boardTexture
         +HandleInput()
         +Update()
         +Draw()
         -MoveOnce()
         -GetMoveInterval()
         -ResetBoard(GameState)
+        -BuildBoardTexture()
     }
     class Snake {
         -vector~Position~ body
@@ -184,7 +186,10 @@ graph LR
 ```
 
 Consequence: every collision test is plain integer equality. No floating point
-is involved until `Draw()`.
+is involved until drawing — and that conversion happens only *once*: at startup
+`Game::BuildBoardTexture()` paints the whole checkerboard into a
+`RenderTexture2D`, and `DrawGrid()` blits that texture every frame instead of
+issuing 600 `DrawRectangle()` calls.
 
 ### 4.2 The frame loop and the fixed timestep
 
@@ -534,6 +539,13 @@ Each exercise says *where to touch it* and *how to check you were right*.
 18. **Why do the tests not need a window?** All rules were pushed into the
     entities (`Snake`, `Food`, `Score`). `Game` only orchestrates. That split is
     why `logic_test.cpp` compiles, links, and runs in a couple of seconds.
+19. **ESC is bound to pause, yet the game does not quit on it. Why?**
+    Raylib's *default exit key* is ESC, and `WindowShouldClose()` returns true
+    when it is pressed — so without intervention, every documented ESC action
+    would also close the program. `SetExitKey(KEY_NULL)` in `main.cpp` retires
+    ESC as the exit key, leaving the window close button (or Alt+F4) as the way
+    out. Worth knowing: this is exactly how an "unrelated" library default can
+    silently contradict your own input design.
 
 ---
 
@@ -577,7 +589,7 @@ For coursework mapping, this project demonstrates:
 | File I/O | `std::ifstream`/`std::ofstream` for the high score |
 | Memory ownership | `MemAlloc` -> `Wave` -> `UnloadSound`; RAII teardown |
 | Build and link | objects, `.d` dependencies, static lib + DLL copy |
-| Testing | 8 headless assertions, no mocking needed |
+| Testing | 11 headless assertions, no mocking needed |
 | Documentation | Doxygen comments, this guide, README |
 
 ---

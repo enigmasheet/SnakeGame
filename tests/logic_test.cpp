@@ -14,6 +14,12 @@
 #include "Score.h"
 #include "Snake.h"
 
+// assert() *is* the test framework here, so a build with NDEBUG would compile
+// every check away and print "ALL LOGIC TESTS PASSED" without testing anything.
+#ifdef NDEBUG
+#error "logic_test.cpp must be built with asserts enabled; remove NDEBUG"
+#endif
+
 /**
  * @brief A default snake is 4 cells long, faces Right, and predicts a head
  *        exactly one cell ahead of the current one.
@@ -21,7 +27,7 @@
 static void TestInitialState()
 {
     Snake snake;
-    assert(snake.GetLength() == 4);
+    assert(snake.GetLength() == static_cast<std::size_t>(Config::InitialSnakeLength));
     assert(snake.GetDirection() == Direction::Right);
 
     const Position head = snake.GetBody().front();
@@ -48,6 +54,54 @@ static void TestOppositeTurnRejected()
     assert(snake.GetDirection() == Direction::Up);
 
     std::printf("180 degree rejection ok\n");
+}
+
+/**
+ * @brief Only two turns can be buffered. A third request that would otherwise
+ *        be legal is dropped, which is what keeps PredictHead() and Step()
+ *        agreeing on which turn is applied next.
+ */
+static void TestQueueCap()
+{
+    Snake snake;
+
+    snake.QueueDirection(Direction::Up);
+    snake.QueueDirection(Direction::Left);
+    snake.QueueDirection(Direction::Down); // legal on its own, but the buffer is full
+
+    const std::deque<Direction>& pending = snake.GetPendingDirections();
+    assert(pending.size() == 2);
+    assert(pending.front() == Direction::Up);
+    assert(pending.back() == Direction::Left);
+
+    std::printf("queue cap ok\n");
+}
+
+/**
+ * @brief PredictHead() reads the buffered turn before Step() consumes it:
+ *        the peek must predict the cell Step() then actually lands on, without
+ *        either call moving anything early.
+ */
+static void TestPredictHeadFollowsQueuedTurn()
+{
+    Snake snake;
+    const Position head = snake.GetBody().front();
+
+    snake.QueueDirection(Direction::Up);
+
+    // Peek: the buffered turn is already reflected in the prediction.
+    const Position predicted = snake.PredictHead();
+    assert(predicted.x == head.x && predicted.y == head.y - 1);
+    assert(snake.GetBody().front() == head);
+    assert(snake.GetPendingDirections().size() == 1);
+
+    // Pop: Step() consumes that same entry, so the head lands where predicted.
+    snake.Step(false);
+    assert(snake.GetBody().front() == predicted);
+    assert(snake.GetDirection() == Direction::Up);
+    assert(snake.GetPendingDirections().empty());
+
+    std::printf("queued turn prediction ok\n");
 }
 
 /**
@@ -79,7 +133,12 @@ static void TestWallCollision()
     Snake snake;
     assert(!snake.HitsWall());
 
-    for (int i = 0; i < 60; i++)
+    // Wide enough to walk past the right edge from any configured start column:
+    // the head begins at GridWidth / 3, so GridWidth + length + 1 steps always
+    // overshoots, whatever Config::GridWidth is set to.
+    const int steps = Config::GridWidth + Config::InitialSnakeLength + 1;
+
+    for (int i = 0; i < steps; i++)
     {
         snake.Step(false);
     }
@@ -106,6 +165,24 @@ static void TestSelfCollision()
 
     assert(snake.HitsItself());
     std::printf("self collision ok\n");
+}
+
+/**
+ * @brief IsWithinGrid() accepts every cell of the board and rejects every cell
+ *        one step outside it — the edges are exclusive on the right/bottom,
+ *        which is what the wall check in Game relies on.
+ */
+static void TestGridBounds()
+{
+    assert(IsWithinGrid({0, 0}));
+    assert(IsWithinGrid({Config::GridWidth - 1, Config::GridHeight - 1}));
+
+    assert(!IsWithinGrid({-1, 0}));
+    assert(!IsWithinGrid({0, -1}));
+    assert(!IsWithinGrid({Config::GridWidth, 0}));
+    assert(!IsWithinGrid({0, Config::GridHeight}));
+
+    std::printf("grid bounds ok\n");
 }
 
 /**
@@ -174,7 +251,7 @@ static void TestScore()
 
     score.AddFood();
     score.AddFood();
-    assert(score.GetCurrent() == 20);
+    assert(score.GetCurrent() == 2 * Config::ScorePerFood);
 
     std::printf("score ok\n");
 }
@@ -187,9 +264,12 @@ int main()
 {
     TestInitialState();
     TestOppositeTurnRejected();
+    TestQueueCap();
+    TestPredictHeadFollowsQueuedTurn();
     TestGrowth();
     TestWallCollision();
     TestSelfCollision();
+    TestGridBounds();
     TestFoodNeverSpawnsInsideSnake();
     TestMoveInterval();
     TestScore();

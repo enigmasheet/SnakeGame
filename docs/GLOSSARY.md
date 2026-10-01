@@ -43,6 +43,12 @@ A user-defined type bundling data and the functions that operate on it, with
 `private` members hidden from outside. `Game`, `Snake`, `Food`, `Score`, and
 `Audio` are the five classes here.
 
+### Compile database (`compile_commands.json`)
+A JSON file listing every translation unit with the exact command used to build
+it — the standard way tools such as VS Code and clangd discover include paths
+and flags instead of guessing. Regenerate with `make compile-commands` after
+adding a source file or changing `CXXFLAGS`.
+
 ### Composition
 Building a type out of other types as members, rather than inheriting from them.
 `Game` *has a* `Snake`, `Food`, `Score`, and `Audio`. This project deliberately
@@ -186,6 +192,13 @@ caller's `snake` object is untouched.
 ### Rejection sampling
 Draw a candidate, reject it if illegal, repeat. Used by `Food::Spawn()` so food
 never lands on the snake. Cheap because the board is large relative to the snake.
+
+### Render texture
+A texture you can draw *into* with the normal raylib drawing calls, then blit as
+a single image. `Game::BuildBoardTexture()` uses one for the static checkerboard
+so the frame only pays for one `DrawTextureRec()` instead of 600 rectangles.
+OpenGL framebuffers are bottom-up, hence the negative source height in
+`Game::DrawGrid()`.
 
 ### State machine
 A value that selects which block of behaviour is active. `GameState` plus the

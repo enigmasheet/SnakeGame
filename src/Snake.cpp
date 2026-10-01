@@ -92,9 +92,10 @@ void Snake::Step(bool grow)
 
 bool Snake::HitsWall() const
 {
-    const Position& head = body.front();
-
-    return head.x < 0 || head.x >= Config::GridWidth || head.y < 0 || head.y >= Config::GridHeight;
+    // Deliberately the same predicate the game applies to the predicted head:
+    // one implementation (IsWithinGrid in Types.h) decides what "inside the
+    // board" means, so a grid resize only has to change one place.
+    return !IsWithinGrid(body.front());
 }
 
 bool Snake::HitsItself() const
@@ -119,7 +120,8 @@ void Snake::Draw() const
     const float size = static_cast<float>(Config::CellSize) - inset * 2.0f;
 
     // Draw tail-first so the head (drawn last) is never covered by later
-    // segments. The gradient parameter t runs 0 (tail) to 1 (neck).
+    // segments. t is 0 at the head end of the body and 1 at the tail, so the
+    // colour fades away from the head.
     for (std::size_t i = body.size(); i-- > 0;)
     {
         const float t = body.size() > 1 ? static_cast<float>(i) / static_cast<float>(body.size() - 1) : 0.0f;

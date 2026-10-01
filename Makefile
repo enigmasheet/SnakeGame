@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -O2 -MMD -MP -Iinclude
+CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude
 LDFLAGS  := -mwindows -static-libgcc -static-libstdc++
 LDLIBS   := -l:libraylib.a -lglfw3 -lopengl32 -lgdi32 -lwinmm
 
@@ -19,7 +19,7 @@ OBJS    := $(patsubst $(SRCDIR)/%.cpp,$(BUILDDIR)/%.o,$(SRCS))
 DEPS    := $(OBJS:.o=.d)
 HEADERS := $(wildcard $(INCDIR)/*.h)
 
-.PHONY: all run test clean help
+.PHONY: all run test clean help compile-commands
 
 # Make runs this when invoked with no target.
 .DEFAULT_GOAL := all
@@ -64,6 +64,7 @@ help:
 	@echo "  make run             build, then start the game"
 	@echo "  make test            build and run the headless logic tests"
 	@echo "  make clean           delete the generated build/ and bin/ folders"
+	@echo "  make compile-commands  regenerate compile_commands.json for editors"
 	@echo "  make help            show this message"
 	@echo ""
 	@echo "Output layout:"
@@ -74,6 +75,26 @@ help:
 	@echo "  include/ public headers (the interfaces, documented with Doxygen)"
 	@echo "  src/     implementations"
 	@echo "  tests/   logic tests (run them with make test)"
+
+COMPILE_DB := compile_commands.json
+# Windows-style project root for the compile database. -a makes cygpath resolve
+# a relative argument ("." would otherwise come back as "."), -m keeps mixed
+# slashes; falls back to pwd on systems without cygpath.
+DB_ROOT    := $(shell cygpath -am . 2>/dev/null || pwd)
+
+# Writes the standard compile database: one entry per translation unit with the
+# exact flags used, so VS Code / clangd resolve includes without guessing.
+# Run after adding a source file or changing CXXFLAGS.
+compile-commands:
+	@printf '[\n' > $(COMPILE_DB)
+	@first=1; for src in $(SRCS) $(TESTDIR)/logic_test.cpp; do \
+		if [ $$first -eq 1 ]; then first=0; else printf ',\n' >> $(COMPILE_DB); fi; \
+		obj=$$(basename $$src .cpp); \
+		printf '  {"directory": "%s", "file": "%s", "command": "%s %s -c %s -o build/%s.o"}' \
+			"$(DB_ROOT)" "$$src" "$(CXX)" "$(CXXFLAGS)" "$$src" "$$obj" >> $(COMPILE_DB); \
+	done
+	@printf '\n]\n' >> $(COMPILE_DB)
+	@echo "wrote $(COMPILE_DB) ($$(grep -c '"file"' $(COMPILE_DB)) entries)"
 
 clean:
 	rm -rf $(BUILDDIR) $(BINDIR)

@@ -54,19 +54,18 @@ int Score::GetHigh() const
 
 void Score::Load()
 {
+    // Every way the file can be unusable means the same thing — there is no
+    // record yet — so one test covers a missing file (the stream never opens),
+    // a non-numeric or empty file (extraction fails), and a negative value.
     std::ifstream file(highScorePath);
+    int stored = 0;
 
-    if (file.is_open())
+    if (!(file >> stored) || stored < 0)
     {
-        file >> high;
+        stored = 0;
     }
 
-    // A missing file leaves `high` at 0; a negative or non-numeric value means
-    // the file is corrupt, so reset it rather than displaying nonsense.
-    if (high < 0)
-    {
-        high = 0;
-    }
+    high = stored;
 }
 
 void Score::Save() const

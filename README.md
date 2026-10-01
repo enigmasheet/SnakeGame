@@ -24,13 +24,14 @@ A classic Snake game clone written in C++17 using [Raylib](https://www.raylib.co
 | Esc | Pause (while playing) / back to menu |
 | R | Restart |
 | F1 | Toggle the debug/teaching overlay |
+| Window close / Alt+F4 | Quit (Esc deliberately never does — see `SetExitKey` in `src/main.cpp`) |
 
 ## Building
 
 Requirements: MSYS2 with the UCRT64 toolchain and Raylib.
 
 ```
-pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib
+pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib make
 ```
 
 Then, from an MSYS2 UCRT64 shell in the project folder:
@@ -98,6 +99,6 @@ SnakeGame/
 
 ## Testing
 
-`make test` runs headless assertions covering: initial state, reversal rejection, growth, wall collision, self collision, food spawn exclusion (500 iterations), the difficulty curve (start value, monotonicity, and the 400-point floor), and score accounting.
+`make test` runs headless assertions covering: initial state, reversal rejection, the 2-deep turn buffer (including the cap and `PredictHead` predicting a queued turn), growth, wall collision, self collision, grid bounds, food spawn exclusion (500 iterations), the difficulty curve (start value, monotonicity, and the 400-point floor), and score accounting.
 
 The tests link only the entity logic — no window or audio device — which is why they can run in seconds and prove the rules are correct independently of the renderer.

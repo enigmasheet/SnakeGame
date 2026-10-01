@@ -9,6 +9,7 @@
 #include "Score.h"
 #include "Snake.h"
 #include "Types.h"
+#include "raylib.h" // RenderTexture2D member below
 
 /**
  * @brief Ties the entities together into a playable game.
@@ -23,7 +24,12 @@ public:
     /** @brief Starts on the menu with an initial piece of food already placed. */
     Game();
 
-    /** @brief Defaulted: the members (snake, food, score, audio) clean up after themselves. */
+    /**
+     * @brief Unloads the baked board texture.
+     *
+     * Runs while the window (and therefore the GPU context) still exists —
+     * main.cpp destroys the Game inside an inner scope, before CloseWindow().
+     */
     ~Game();
 
     /**
@@ -76,6 +82,15 @@ private:
     void MoveOnce();
 
     /**
+     * @brief Paints the static checkerboard and border into boardTexture once.
+     *
+     * The grid never changes, so baking it at startup replaces 600
+     * DrawRectangle() calls per frame with a single texture blit.
+     * Called from the constructor; unloaded by the destructor.
+     */
+    void BuildBoardTexture();
+
+    /**
      * @brief Seconds between moves at the current score.
      * @return Config::StartMoveInterval reduced by the score, clamped at
      *         Config::MinMoveInterval so the game stays playable at high scores.
@@ -95,8 +110,9 @@ private:
     Score score;   /**< Run score and persisted best. */
     Audio audio;   /**< Sound effects; non-copyable, which makes Game non-copyable. */
 
-    GameState state; /**< Current state machine node. */
-    float moveTimer; /**< Seconds accumulated toward the next move. */
-    bool newRecord;  /**< Set when FinishRun() beat the previous high score. */
-    bool showDebug;  /**< Whether the F1 teaching overlay is visible. */
+    GameState state;      /**< Current state machine node. */
+    float moveTimer;      /**< Seconds accumulated toward the next move. */
+    bool newRecord;       /**< Set when FinishRun() beat the previous high score. */
+    bool showDebug;       /**< Whether the F1 teaching overlay is visible. */
+    RenderTexture2D boardTexture; /**< Pre-rendered grid, built once in the constructor. */
 };

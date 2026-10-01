@@ -39,6 +39,7 @@ Run `make help` for this list at any time.
 | `make run` | Build, then start the game | window opens |
 | `make test` | Build and run the headless logic tests | `bin/logic_test.exe` |
 | `make clean` | Delete all generated output | `build/`, `bin/` removed |
+| `make compile-commands` | Regenerate the editor compile database | `compile_commands.json` |
 | `make help` | Describe every target | console text |
 
 ---
@@ -89,7 +90,7 @@ compiles nothing. Force a full rebuild with `make clean && make`.
 | Flag | Purpose |
 | ---- | ------- |
 | `-std=c++17` | Language version (needed for `inline constexpr` variables in `Types.h`) |
-| `-Wall -Wextra` | Turn on the useful warnings. This project builds with **zero** — treat any new warning as a defect |
+| `-Wall -Wextra -Wpedantic -Wshadow` | The useful warnings plus strict standard conformance and shadowed-variable detection. This project builds with **zero** — treat any new warning as a defect |
 | `-O2` | Optimise for speed; irrelevant to correctness |
 | `-MMD -MP` | Emit `.d` dependency files so incremental builds are correct |
 | `-Iinclude` | Look for `#include "..."` in `include/`. Without it every include of a project header fails |
@@ -152,9 +153,17 @@ If you see *"glfw3.dll was not found"*, the game was copied without running
 | Debug | **F5** — builds first, then launches under GDB (`bin/snake.exe`, working directory `bin/`) |
 
 **IntelliSense shows red squiggles but the build passes?** The C/C++ extension
-cached configuration from before the files moved to `include/`. Run
-**Developer: Reload Window** (or **C/C++: Reset IntelliSense Database**). The
-compiler is the source of truth: if `make` succeeds, the code is correct.
+has cached an older configuration (from before the headers moved to `include/`,
+so it may even reference files that no longer exist). Run
+**Developer: Reload Window** (or **C/C++: Reset IntelliSense Database**).
+
+To make that impossible in the first place, the editor reads
+`compile_commands.json` — the standard compile database — which records the
+exact flags for every translation unit (`"compileCommands"` in
+`.vscode/c_cpp_properties.json`). It is tracked in git, and
+`make compile-commands` regenerates it after you add a source file or change
+`CXXFLAGS`. The compiler remains the source of truth: if `make` succeeds, the
+code is correct.
 
 Debugger settings live in `.vscode/launch.json`, tasks in `.vscode/tasks.json`,
 and include paths in `.vscode/c_cpp_properties.json`.
@@ -209,9 +218,12 @@ make test
 ```
 initial state ok
 180 degree rejection ok
+queue cap ok
+queued turn prediction ok
 growth ok
 wall collision ok
 self collision ok
+grid bounds ok
 food spawn ok
 move interval ok
 score ok
@@ -236,9 +248,26 @@ cd SnakeGame
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib make   # once
 make help        # shows the target list
 make clean && make -j     # builds with zero warnings
-make test        # 8 tests pass
+make test        # 11 tests pass
 ls bin           # snake.exe, glfw3.dll, libwinpthread-1.dll, logic_test.exe
 ```
 
 If every line above succeeds, the toolchain, the compiler flags, the linker, the
 DLL handling, and the tests are all correct.
+
+---
+
+## 11. Continuous integration
+
+`.github/workflows/ci.yml` runs exactly those two commands on every push to
+`main` and on every pull request, on `windows-latest` with the same UCRT64
+toolchain:
+
+1. `msys2/setup-msys2` installs `gcc`, `raylib`, and `make`
+2. `make -j` — the build must stay warning-free
+3. `make test` — the 11 assertions must pass
+
+The job is headless by design: the test binary links only entity logic and never
+calls `InitWindow()`, so it needs no display. `.gitattributes` force-checks out
+the `Makefile` with LF endings, which is what keeps `make` from failing on the
+runner with `missing separator`.

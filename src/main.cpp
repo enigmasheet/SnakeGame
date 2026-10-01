@@ -18,6 +18,12 @@ int main()
     InitWindow(Config::WindowWidth, Config::WindowHeight, "Snake - C++ and Raylib");
     SetTargetFPS(60);
 
+    // raylib treats ESC as the exit key by default, which would make
+    // WindowShouldClose() return true the moment the game used it to pause —
+    // every documented ESC action would quit the program. Retire ESC as the
+    // exit key so only the window close button (or Alt+F4) ends the run.
+    SetExitKey(KEY_NULL);
+
     // Deliberate inner scope: Game (and its Audio member) must be destroyed
     // while the window is still alive, so sounds unload against a working
     // context instead of after CloseWindow().
