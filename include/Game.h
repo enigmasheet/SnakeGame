@@ -1,3 +1,7 @@
+/**
+ * @file Game.h
+ * @brief Game state machine: input handling, simulation timing, collisions, and rendering.
+ */
 #pragma once
 
 #include "Audio.h"
@@ -6,36 +10,84 @@
 #include "Snake.h"
 #include "Types.h"
 
+/**
+ * @brief Ties the entities together into a playable game.
+ *
+ * One instance lives for the whole lifetime of the window. Each frame it reads
+ * input for the current state, advances the simulation only while Playing, and
+ * draws the board plus the overlay that matches the current state.
+ */
 class Game
 {
 public:
+    /** @brief Starts on the menu with an initial piece of food already placed. */
     Game();
+
+    /** @brief Defaulted: the members (snake, food, score, audio) clean up after themselves. */
     ~Game();
 
+    /**
+     * @brief Reads the keyboard for the current state and performs any transition.
+     *
+     * Only ever consumes one state's keys, so bindings cannot be ambiguous
+     * between menu, playing, paused, and game over.
+     */
     void HandleInput();
+
+    /**
+     * @brief Advances the simulation while Playing; ignores everything else.
+     *
+     * Accumulates real frame time and then applies one or more fixed-step moves,
+     * keeping the snake's speed independent of the render frame rate (and of
+     * frame hitches, which are caught up instead of skipped).
+     */
     void Update();
+
+    /** @brief Draws the board, entities, HUD, and the overlay for the current state. */
     void Draw();
 
 private:
+    /** @brief Full reset into GameState::Playing: new snake, fresh food, zeroed score. */
     void StartRun();
-    void RestartRun();
+
+    /** @brief Full reset into GameState::Menu. Identical to StartRun() apart from the final state. */
     void GoToMenu();
+
+    /** @brief Handles death: commits the high score if beaten, plays the jingle, and enters GameState::GameOver. */
     void HandleGameOver();
+
+    /**
+     * @brief Applies one logical move and resolves everything it can trigger.
+     *
+     * Order matters and is deliberate:
+     *  1. Predict the head and test it against the grid — death is decided
+     *     before any mutation, so a fatal move never lands on the board.
+     *  2. Step the snake (which pops one buffered turn).
+     *  3. Test food, then self-collision. Because Step() removes the tail
+     *     first, moving into the cell the tail just vacated is legal.
+     */
     void MoveOnce();
+
+    /**
+     * @brief Seconds between moves at the current score.
+     * @return Config::StartMoveInterval reduced by the score, clamped at
+     *         Config::MinMoveInterval so the game stays playable at high scores.
+     */
     float GetMoveInterval() const;
 
-    void DrawGrid() const;
-    void DrawHud() const;
-    void DrawMenuOverlay() const;
-    void DrawPauseOverlay() const;
-    void DrawGameOverOverlay() const;
+    // --- Rendering helpers; each assumes BeginDrawing() has already been called ---
+    void DrawGrid() const;            /**< Checkerboard play area and border. */
+    void DrawHud() const;             /**< Score, high score, and length strip. */
+    void DrawMenuOverlay() const;     /**< Title, controls, and blinking start prompt. */
+    void DrawPauseOverlay() const;    /**< Pause card and its keys. */
+    void DrawGameOverOverlay() const; /**< Final score, possible "new best", and keys. */
 
-    Snake snake;
-    Food food;
-    Score score;
-    Audio audio;
+    Snake snake;   /**< Player-controlled entity. */
+    Food food;     /**< Collectible; respawns on every bite. */
+    Score score;   /**< Run score and persisted best. */
+    Audio audio;   /**< Sound effects; non-copyable, which makes Game non-copyable. */
 
-    GameState state;
-    float moveTimer;
-    bool newRecord;
+    GameState state; /**< Current state machine node. */
+    float moveTimer; /**< Seconds accumulated toward the next move. */
+    bool newRecord;  /**< Set when FinishRun() beat the previous high score. */
 };
