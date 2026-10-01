@@ -1,3 +1,12 @@
+/**
+ * @file logic_test.cpp
+ * @brief Headless unit tests for Snake, Food, and Score.
+ *
+ * No window or audio device is required — only entity logic is exercised, so the
+ * suite runs anywhere via `make test`. Each test prints one line on success;
+ * a failed assert aborts the program with a non-zero exit code.
+ */
+
 #include <cassert>
 #include <cstdio>
 
@@ -5,6 +14,10 @@
 #include "Score.h"
 #include "Snake.h"
 
+/**
+ * @brief A default snake is 4 cells long, faces Right, and predicts a head
+ *        exactly one cell ahead of the current one.
+ */
 static void TestInitialState()
 {
     Snake snake;
@@ -17,6 +30,10 @@ static void TestInitialState()
     std::printf("initial state ok\n");
 }
 
+/**
+ * @brief Queuing a 180 degree reversal is ignored, while two valid turns
+ *        (Up, then Down) are buffered and applied one step at a time.
+ */
 static void TestOppositeTurnRejected()
 {
     Snake snake;
@@ -33,6 +50,10 @@ static void TestOppositeTurnRejected()
     std::printf("180 degree rejection ok\n");
 }
 
+/**
+ * @brief Step(true) grows the snake by one cell; Step(false) keeps the length
+ *        unchanged (the tail slides forward).
+ */
 static void TestGrowth()
 {
     Snake snake;
@@ -49,6 +70,10 @@ static void TestGrowth()
     std::printf("growth ok\n");
 }
 
+/**
+ * @brief Enough steps to the right carry the head past the grid edge, at which
+ *        point HitsWall() reports the collision.
+ */
 static void TestWallCollision()
 {
     Snake snake;
@@ -63,6 +88,10 @@ static void TestWallCollision()
     std::printf("wall collision ok\n");
 }
 
+/**
+ * @brief Driving back into its own body (Down, Left, Up while growing) is
+ *        reported as a self collision.
+ */
 static void TestSelfCollision()
 {
     Snake snake;
@@ -79,6 +108,10 @@ static void TestSelfCollision()
     std::printf("self collision ok\n");
 }
 
+/**
+ * @brief Across 500 respawns the food never lands on a snake cell and always
+ *        stays within the grid bounds.
+ */
 static void TestFoodNeverSpawnsInsideSnake()
 {
     Food food;
@@ -88,7 +121,6 @@ static void TestFoodNeverSpawnsInsideSnake()
     {
         food.Spawn(snake.GetBody());
 
-        const Position& head = snake.GetBody().front();
         bool inside = false;
 
         for (const Position& segment : snake.GetBody())
@@ -102,12 +134,15 @@ static void TestFoodNeverSpawnsInsideSnake()
         assert(!inside);
         assert(food.GetPosition().x >= 0 && food.GetPosition().x < Config::GridWidth);
         assert(food.GetPosition().y >= 0 && food.GetPosition().y < Config::GridHeight);
-        (void)head;
     }
 
     std::printf("food spawn ok\n");
 }
 
+/**
+ * @brief ResetRun() zeroes the counter and each AddFood() awards
+ *        Config::ScorePerFood points.
+ */
 static void TestScore()
 {
     Score score;
@@ -121,6 +156,10 @@ static void TestScore()
     std::printf("score ok\n");
 }
 
+/**
+ * @brief Runs every test case in order.
+ * @return 0 on success; a failed assert terminates the process before this line.
+ */
 int main()
 {
     TestInitialState();

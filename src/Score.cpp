@@ -1,3 +1,8 @@
+/**
+ * @file Score.cpp
+ * @brief Implementation of Score: run scoring plus high score file persistence.
+ */
+
 #include "Score.h"
 
 #include <fstream>
@@ -9,6 +14,8 @@ Score::Score()
     : current(0)
     , high(0)
 {
+    // GetApplicationDirectory() points at the executable, so the file is found
+    // no matter where the game was started from (double-click, IDE, make run).
     highScorePath = std::string(GetApplicationDirectory()) + "highscore.txt";
     Load();
 }
@@ -54,6 +61,8 @@ void Score::Load()
         file >> high;
     }
 
+    // A missing file leaves `high` at 0; a negative or non-numeric value means
+    // the file is corrupt, so reset it rather than displaying nonsense.
     if (high < 0)
     {
         high = 0;

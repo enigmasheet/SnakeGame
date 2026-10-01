@@ -1,3 +1,8 @@
+/**
+ * @file Food.cpp
+ * @brief Implementation of Food: rejection-sampled spawning and circle rendering.
+ */
+
 #include "Food.h"
 
 #include <algorithm>
@@ -20,6 +25,8 @@ void Food::Spawn(const std::vector<Position>& occupiedCells)
 {
     const int totalCells = Config::GridWidth * Config::GridHeight;
 
+    // Nothing to choose from if the snake covers every cell; keep the old spot
+    // rather than looping forever.
     if (static_cast<int>(occupiedCells.size()) >= totalCells)
     {
         return;
@@ -30,6 +37,9 @@ void Food::Spawn(const std::vector<Position>& occupiedCells)
 
     Position candidate = position;
 
+    // Rejection sampling: redraw until the cell is free. Every cell is equally
+    // likely, and with a snake covering only a few dozen of 600 cells the loop
+    // exits after one or two tries.
     do
     {
         candidate.x = columnDistribution(rng);

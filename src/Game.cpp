@@ -1,3 +1,9 @@
+/**
+ * @file Game.cpp
+ * @brief Implementation of Game: input dispatch, fixed-step timing, collisions,
+ *        and all HUD/overlay rendering.
+ */
+
 #include "Game.h"
 
 #include <cmath>
@@ -5,6 +11,7 @@
 
 #include "raylib.h"
 
+// Dark arcade palette, kept in one place so the whole theme can be retinted here.
 namespace
 {
     const Color Background = {14, 15, 20, 255};
@@ -26,6 +33,7 @@ Game::Game()
     , moveTimer(0.0f)
     , newRecord(false)
 {
+    // Place the first food immediately so the menu already shows a live board.
     food.Spawn(snake.GetBody());
 }
 
@@ -67,7 +75,7 @@ void Game::HandleInput()
             if (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE))
             {
                 audio.PlayClick();
-                moveTimer = 0.0f;
+                moveTimer = 0.0f; // zeroed so resuming cannot fire a move instantly
                 state = GameState::Paused;
             }
             break;
@@ -121,11 +129,16 @@ void Game::Update()
 
     const float interval = GetMoveInterval();
 
+    // Fixed-timestep accumulator: a slow frame may owe several moves, so drain
+    // the timer instead of stepping at most once. Speed therefore depends only
+    // on the score, never on the render frame rate.
     while (moveTimer >= interval)
     {
         moveTimer -= interval;
         MoveOnce();
 
+        // A move can end the run — stop consuming the timer rather than
+        // stepping a snake that is already dead.
         if (state != GameState::Playing)
         {
             break;
@@ -171,6 +184,8 @@ void Game::StartRun()
 
 void Game::GoToMenu()
 {
+    // Identical reset to StartRun(), except it parks the state machine on the
+    // menu instead of on Playing.
     snake.Reset();
     food.Spawn(snake.GetBody());
     score.ResetRun();
@@ -189,6 +204,8 @@ void Game::HandleGameOver()
 
 void Game::MoveOnce()
 {
+    // 1. Test the *predicted* head: death is decided before any state changes,
+    //    so a fatal move is never committed to the board.
     const Position nextHead = snake.PredictHead();
 
     if (nextHead.x < 0 || nextHead.x >= Config::GridWidth || nextHead.y < 0 || nextHead.y >= Config::GridHeight)
@@ -199,15 +216,20 @@ void Game::MoveOnce()
 
     const bool ate = (nextHead == food.GetPosition());
 
+    // 2. Step the snake (this also pops one buffered turn). `ate` decides
+    //    whether the tail is kept.
     snake.Step(ate);
 
     if (ate)
     {
+        // Score, sound cue, and a respawn that skips every current snake cell.
         score.AddFood();
         audio.PlayEat();
         food.Spawn(snake.GetBody());
     }
 
+    // 3. Self-collision is tested last: Step() already removed the tail, so
+    //    sliding into the cell the tail just vacated is correctly allowed.
     if (snake.HitsItself())
     {
         HandleGameOver();
@@ -216,8 +238,11 @@ void Game::MoveOnce()
 
 float Game::GetMoveInterval() const
 {
+    // Difficulty curve: 0.0002 s off the interval per point, starting at
+    // 0.15 s (100 points would already be at the floor).
     const float interval = Config::StartMoveInterval - score.GetCurrent() * Config::ScoreSpeedFactor;
 
+    // Clamp so the snake can never outrun human reaction time.
     return interval < Config::MinMoveInterval ? Config::MinMoveInterval : interval;
 }
 
@@ -227,6 +252,8 @@ void Game::DrawGrid() const
     {
         for (int column = 0; column < Config::GridWidth; column++)
         {
+            // Checkerboard: the parity of row+column picks the shade, giving a
+            // 2D alternation from a single modulo.
             const Color cellColor = (row + column) % 2 == 0 ? BoardColor : BoardColorAlt;
 
             DrawRectangle(column * Config::CellSize,
@@ -269,6 +296,7 @@ void Game::DrawMenuOverlay() const
     const std::string subtitle = "A C++ / RAYLIB ARCADE CLONE";
     DrawText(subtitle.c_str(), (Config::WindowWidth - MeasureText(subtitle.c_str(), 20)) / 2, 225, 20, MutedText);
 
+    // Blinking prompt: visible for 0.6 s of every 1 s cycle.
     if (std::fmod(GetTime(), 1.0) < 0.6)
     {
         const std::string prompt = "PRESS ENTER TO START";
