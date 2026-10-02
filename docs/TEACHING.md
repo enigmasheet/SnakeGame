@@ -31,28 +31,19 @@ Everything in this game is a **cell** on a 30 x 20 grid. Cells are converted to
 pixels only when drawing (`pixel = cell * 25`). The program has three phases per
 frame, repeated until the window is closed:
 
-```text
-            +------------------+
-            |   main() loop    |
-            +--------+---------+
-                     |
-        +------------+------------+
-        v                         |
-  HandleInput()                   |
-        |                         |
-        v                         |
-     Update()   <- only while Playing
-        |                         |
-        v                         |
-      Draw()  ---------------------+
+```mermaid
+flowchart TD
+    L["main() loop"] --> H["HandleInput()"]
+    H --> U["Update() - only while Playing"]
+    U --> D["Draw()"]
+    D --> L
 ```
 
-```text
-main loop (about 60 times per second)
-  1. HandleInput()   read keys, maybe change state
-  2. Update()        advance the simulation (0 or more snake moves)
-  3. Draw()          paint everything
-```
+The main loop runs about 60 times per second:
+
+1. **`HandleInput()`** — read keys, maybe change state
+2. **`Update()`** — advance the simulation (0 or more snake moves)
+3. **`Draw()`** — paint everything
 
 Two ideas carry the whole program:
 
@@ -149,16 +140,6 @@ classDiagram
     Game *-- Audio : owns
 ```
 
-ASCII equivalent:
-
-```text
-Game  (state machine, timing, rendering)
- ├── owns Snake   body vector + queued turns + drawing
- ├── owns Food    one position + random generator
- ├── owns Score   current score + high score (file)
- └── owns Audio   three synthesized sounds + the audio device
-```
-
 **Why composition instead of inheritance?** There is no `Entity` base class with
 `virtual Draw()`. With four concrete types and one owner, a base class would add
 a vtable and indirection to save nothing. Inheritance earns its keep when you
@@ -183,13 +164,17 @@ graph LR
 
 ```text
  screen (0,0)
- +------+------------------ 750 px ------------------+
- | HUD  |  60 px tall: score, high score, length     |
- +------+---------------------------+---------------+
- |  (0,0)| (1,0) | (2,0) | ...      | play area     |  20 rows
- +-------+-------+-------+----------+---------------+
- |  (0,1)| (1,1) | ...              |  30 columns   |
- +-------+-------+--------------+---+---------------+
+ ┌───────────────────────────────── 750 px ──────────────────────────────────┐
+ │ HUD: score, high score, length — 60 px tall                               │
+ ├────────────┬────────────┬────────────┬────────────────────────────────────┤
+ │ (0,0)      │ (1,0)      │ (2,0)      │ ...                     30 columns │
+ ├────────────┼────────────┼────────────┼────────────────────────────────────┤
+ │ (0,1)      │ (1,1)      │ ...        │ play area: 30 × 20 cells           │
+ ├────────────┼────────────┼────────────┼────────────────────────────────────┤
+ │ ...        │            │            │ each cell = 25 × 25 px             │
+ ├────────────┼────────────┼────────────┼────────────────────────────────────┤
+ │ (0,19)     │ (1,19)     │ ...        │ 20 rows (grid = 500 px)            │
+ └────────────┴────────────┴────────────┴────────────────────────────────────┘
 ```
 
 Consequence: every collision test is plain integer equality. No floating point
@@ -213,11 +198,23 @@ Update()                                   (Game.cpp)
 ```
 
 ```text
-frame 1 (16 ms)     frame 2 (16 ms)     frame 3 (48 ms, hitch)
-moveTimer 0.016     0.032               0.080
-interval 0.150      0.150               0.150
--> no move          -> no move          -> move (0.15), move (0.15), leftover 0.05
+ interval = 0.150 s (score 0)
+
+ ┌──────────┬───────┬───────┬───────┬─────┬───────┬───────────┐
+ │ frame    │ 1     │ 2     │ 3     │ ... │ 9     │ 10 (hitch)│
+ ├──────────┼───────┼───────┼───────┼─────┼───────┼───────────┤
+ │ dt       │ 16 ms │ 16 ms │ 16 ms │ ... │ 16 ms │ 200 ms    │
+ ├──────────┼───────┼───────┼───────┼─────┼───────┼───────────┤
+ │ moveTimer│ 0.016 │ 0.032 │ 0.048 │ ... │ 0.144 │ 0.344     │
+ ├──────────┼───────┼───────┼───────┼─────┼───────┼───────────┤
+ │ result   │ no    │ no    │ no    │ ... │ no    │ 2 moves,  │
+ │ (after)  │       │       │       │     │       │ left 0.044│
+ └──────────┴───────┴───────┴───────┴─────┴───────┴───────────┘
 ```
+
+Nine ordinary frames accumulate to `0.144` — still short of the interval, so
+nothing moves. The tenth frame hitches for 200 ms; the `while` loop drains the
+whole `0.344` as two moves and keeps `0.044` as credit for the next frame.
 
 **Why not "move once per frame"?** Then speed would depend on FPS. A 144 Hz
 monitor would make the game 2.4x harder. **Why not just `if (moveTimer >= interval)`?**
@@ -286,13 +283,34 @@ MoveOnce()
         yes -> GameOver
 ```
 
-```text
-Before Step()               After Step(grow = false)
+The same order as a flowchart:
 
-  X X X H ->                    X X X H
-          F                          F
-  tail still occupies its cell       tail removed, cell now free
-  (a "collision" here would be wrong)
+```mermaid
+flowchart TD
+    A["PredictHead(): peek, no mutation"] --> B{"IsWithinGrid(nextHead)?"}
+    B -- "no (wall)" --> GO["GameOver"]
+    B -- "yes" --> C["ate = nextHead == food"]
+    C --> D["Step(ate): pop turn, push head,<br/>drop tail unless ate"]
+    D --> E["if ate: score++, sound, respawn food"]
+    E --> F{"HitsItself()?"}
+    F -- "yes" --> GO
+    F -- "no" --> N["next frame"]
+```
+
+```text
+ ┌── Before Step() ─────────────────────┐
+ │  col    1   2   3   4   5   6   7   8│
+ │         X   X   X   H   →           F│
+ │         ▲  tail cell still occupied  │
+ └──────────────────────────────────────┘
+
+ ┌── After Step(grow = false) ──────────┐
+ │  col    1   2   3   4   5   6   7   8│
+ │         ·   X   X   X   H   →       F│
+ │         ▲  tail cell now free        │
+ └──────────────────────────────────────┘
+
+ X = body   H = head   F = food   ▲ = the tail cell
 ```
 
 Because step 4 removes the tail *before* step 6 runs, a snake can legally drive
@@ -317,25 +335,6 @@ stateDiagram-v2
     GameOver --> Playing : R / Enter / Space
     GameOver --> Menu : Esc
     Menu --> [*]
-```
-
-```text
-          +------+   Enter/Space/R    +---------+
-          | Menu | -----------------> | Playing |
-          +------+                    +---------+
-             ^                        |   |   |
-             | Esc                    |   |   | P / Esc
-             |                        |   |   v
-             |                        |   | +-------+
-             +------- Esc ----------+ |   | | Paused|
-                                      |   | +-------+
-                                      |   |   | P / Enter
-                                      |   |   | R
-                                      |   v   v
-                                      | +----------+
-                                      | | GameOver |
-                                      +-+----------+
-                                        R / Enter / Space
 ```
 
 Each state owns a branch of the `switch` in `HandleInput()`. A key can mean

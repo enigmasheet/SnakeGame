@@ -46,19 +46,11 @@ Run `make help` for this list at any time.
 
 ## 3. What happens during a build
 
-```text
-include/*.h   src/*.cpp
-     \          |
-      \         |  g++ -c  (compile one at a time)
-       +--> build/*.o  <-- also writes build/*.d (which headers were used)
-                  |
-                  |  g++  (link everything)
-                  v
-            bin/snake.exe
-                  |
-                  |  cp glfw3.dll libwinpthread-1.dll bin/
-                  v
-            bin/ (game is runnable by double-click)
+```mermaid
+flowchart TD
+    A["include/*.h + src/*.cpp"] -->|"g++ -c (compile one at a time)"| B["build/*.o + build/*.d (which headers were used)"]
+    B -->|"g++ (link everything)"| C["bin/snake.exe"]
+    C -->|"cp glfw3.dll libwinpthread-1.dll"| D["bin/ (runnable by double-click)"]
 ```
 
 ### Compilation
@@ -71,6 +63,43 @@ For example, editing `include/Snake.h` rebuilds five of the eight objects —
 `Snake.h` in through `Game.h`) — and leaves `Food.o`, `Score.o`, and `Audio.o`
 alone. Editing `include/Types.h` rebuilds seven of the eight objects; only
 `Audio.o` is untouched.
+
+The blast radius, read from the `.d` files:
+
+```mermaid
+flowchart LR
+    subgraph inc["include/"]
+        SH["Snake.h"]
+        TH["Types.h"]
+    end
+    subgraph objs["build/ (8 objects)"]
+        O1["Snake.o"]
+        O2["Game.o"]
+        O3["GameInput.o"]
+        O4["GameRender.o"]
+        O5["main.o"]
+        O6["Food.o"]
+        O7["Score.o"]
+        O8["Audio.o"]
+    end
+    SH ==> O1
+    SH ==> O2
+    SH ==> O3
+    SH ==> O4
+    SH ==> O5
+    TH -.-> O1
+    TH -.-> O2
+    TH -.-> O3
+    TH -.-> O4
+    TH -.-> O5
+    TH -.-> O6
+    TH -.-> O7
+```
+
+Thick edges = what a `Snake.h` edit rebuilds (5 of 8). Dotted edges = what a
+`Types.h` edit rebuilds (the same five plus `Food.o` and `Score.o` — 7 of 8).
+`Audio.o` has no edges: no chain from it reaches either header, which is why it
+survives both edits.
 
 ### Linking
 
@@ -112,11 +141,11 @@ compiles nothing. Force a full rebuild with `make clean && make`.
 
 This is the question that trips everybody up.
 
-```text
-bin/snake.exe  --static-->  contains raylib's code and the C++ runtime
-                   |
-                   +--imports-->  glfw3.dll           (raylib calls GLFW)
-                                  libwinpthread-1.dll (threads used by the MinGW runtime)
+```mermaid
+flowchart TD
+    E["bin/snake.exe"] -- "static" --> C["raylib's code and the C++ runtime (inside the exe)"]
+    E -- "imports" --> G["glfw3.dll — raylib calls GLFW"]
+    E -- "imports" --> W["libwinpthread-1.dll — threads used by the MinGW runtime"]
 ```
 
 `libraylib.a` contains raylib's own code, but raylib *calls GLFW*, and GLFW is
