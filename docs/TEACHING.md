@@ -4,7 +4,7 @@ This document is a guided tour of the codebase. It is written to be read *before
 looking at any single file in detail, and to be useful whether you are learning
 from it, teaching it, or defending it in a viva.
 
-**Companion guides**
+## Companion guides
 
 - [BUILD.md](BUILD.md) — toolchain, `Makefile`, troubleshooting
 - [GLOSSARY.md](GLOSSARY.md) — C++ terms used here
@@ -31,7 +31,7 @@ Everything in this game is a **cell** on a 30 x 20 grid. Cells are converted to
 pixels only when drawing (`pixel = cell * 25`). The program has three phases per
 frame, repeated until the window is closed:
 
-```
+```text
             +------------------+
             |   main() loop    |
             +--------+---------+
@@ -47,7 +47,7 @@ frame, repeated until the window is closed:
       Draw()  ---------------------+
 ```
 
-```
+```text
 main loop (about 60 times per second)
   1. HandleInput()   read keys, maybe change state
   2. Update()        advance the simulation (0 or more snake moves)
@@ -151,7 +151,7 @@ classDiagram
 
 ASCII equivalent:
 
-```
+```text
 Game  (state machine, timing, rendering)
  ├── owns Snake   body vector + queued turns + drawing
  ├── owns Food    one position + random generator
@@ -181,7 +181,7 @@ graph LR
     cell -- "60 + y * 25" --> py["screen Y"]
 ```
 
-```
+```text
  screen (0,0)
  +------+------------------ 750 px ------------------+
  | HUD  |  60 px tall: score, high score, length     |
@@ -200,7 +200,7 @@ issuing 600 `DrawRectangle()` calls.
 
 ### 4.2 The frame loop and the fixed timestep
 
-```
+```text
 Update()                                   (Game.cpp)
   if state != Playing -> return
   moveTimer += GetFrameTime()              accumulate real elapsed time
@@ -212,7 +212,7 @@ Update()                                   (Game.cpp)
       if state changed -> break            a fatal step must not keep stepping
 ```
 
-```
+```text
 frame 1 (16 ms)     frame 2 (16 ms)     frame 3 (48 ms, hitch)
 moveTimer 0.016     0.032               0.080
 interval 0.150      0.150               0.150
@@ -251,7 +251,7 @@ sequenceDiagram
     Note over S: pops Up, moves up
 ```
 
-```
+```text
 QueueDirection(new):
     last = pending.back() if any, else current direction
     if new is opposite of last  -> ignore      (would be a 180)
@@ -274,7 +274,7 @@ would make prediction and wall-testing much harder to reason about.
 
 ### 4.4 Collision order (the subtle one)
 
-```
+```text
 MoveOnce()
   1. nextHead = PredictHead()          peek, no mutation
   2. IsWithinGrid(nextHead)?           death decided BEFORE anything changes
@@ -286,7 +286,7 @@ MoveOnce()
         yes -> GameOver
 ```
 
-```
+```text
 Before Step()               After Step(grow = false)
 
   X X X H ->                    X X X H
@@ -319,7 +319,7 @@ stateDiagram-v2
     Menu --> [*]
 ```
 
-```
+```text
           +------+   Enter/Space/R    +---------+
           | Menu | -----------------> | Playing |
           +------+                    +---------+
@@ -399,7 +399,7 @@ directly:
 | game over | 420 Hz -> 110 Hz (down = defeat) | 0.5 s | 0.5 |
 | click | 700 Hz flat | 0.05 s | 0.3 |
 
-```
+```text
 for each sample i:
     t         = i / frameCount                0 -> 1
     frequency = lerp(start, end, t)           linear sweep
@@ -453,31 +453,31 @@ Each exercise says *where to touch it* and *how to check you were right*.
 
 ### Medium (2-4 hours)
 
-6. **Wrap-around edges** instead of death. *Touch:* `Game::MoveOnce()` step 2 and
+1. **Wrap-around edges** instead of death. *Touch:* `Game::MoveOnce()` step 2 and
    `Snake::HitsWall()`. *Gotcha:* if you wrap in one place but not the other the
    two disagree — this is exactly why `IsWithinGrid()` was centralised.
-7. **Obstacles.** Keep `std::vector<Position> walls` in `Game`; place them in
+2. **Obstacles.** Keep `std::vector<Position> walls` in `Game`; place them in
    `StartRun()`, test in `MoveOnce()` alongside the self-check, skip them in
    `Food::Spawn()`.
-8. **Bonus food.** A gold food worth 50 that lasts 5 seconds. *Touch:* `Food`
+3. **Bonus food.** A gold food worth 50 that lasts 5 seconds. *Touch:* `Food`
    gains a `bool bonus` and a timer, `Score::AddFood(int amount)`, `Game::Update`
    for the timeout.
-9. **Top-5 scoreboard.** *Touch:* `Score::Save/Load` with a
+4. **Top-5 scoreboard.** *Touch:* `Score::Save/Load` with a
    `std::vector<int>` + `std::sort` + `std::max_element`.
-10. **Pause menu selection.** Move a highlight with arrows, activate with Enter —
-    a second state (`GameState::PauseMenu`) proves the pattern scales.
+5. **Pause menu selection.** Move a highlight with arrows, activate with Enter —
+   a second state (`GameState::PauseMenu`) proves the pattern scales.
 
 ### Hard (a day or more)
 
-11. **Two players.** A second `Snake`, a second key set, collision against the
-    other snake's body. *Gotcha:* order of stepping matters — decide and
-    document who moves first.
-12. **Levels.** After N foods, add walls and raise the speed; introduce a
-    `GameState::LevelIntro` with a countdown.
-13. **Beat detection.** A short arpeggio on a new high score: add a fourth tone
-    and play it when `FinishRun()` returns true.
-14. **Screen shake on death.** Offset the whole draw by a decaying random amount
-    in `Game::Draw()`.
+1. **Two players.** A second `Snake`, a second key set, collision against the
+   other snake's body. *Gotcha:* order of stepping matters — decide and
+   document who moves first.
+2. **Levels.** After N foods, add walls and raise the speed; introduce a
+   `GameState::LevelIntro` with a countdown.
+3. **Beat detection.** A short arpeggio on a new high score: add a fourth tone
+   and play it when `FinishRun()` returns true.
+4. **Screen shake on death.** Offset the whole draw by a decaying random amount
+   in `Game::Draw()`.
 
 ---
 

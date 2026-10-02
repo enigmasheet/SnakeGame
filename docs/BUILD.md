@@ -11,7 +11,7 @@ fix the errors that stop it working. If you only want commands, use
 Everything is installed through [MSYS2](https://www.msys2.org/) using the
 **UCRT64** environment.
 
-```
+```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib make
 ```
 
@@ -46,7 +46,7 @@ Run `make help` for this list at any time.
 
 ## 3. What happens during a build
 
-```
+```text
 include/*.h   src/*.cpp
      \          |
       \         |  g++ -c  (compile one at a time)
@@ -112,7 +112,7 @@ compiles nothing. Force a full rebuild with `make clean && make`.
 
 This is the question that trips everybody up.
 
-```
+```text
 bin/snake.exe  --static-->  contains raylib's code and the C++ runtime
                    |
                    +--imports-->  glfw3.dll           (raylib calls GLFW)
@@ -216,7 +216,7 @@ the `bin/`/`build/` layout — is portable as written.
 make test
 ```
 
-```
+```text
 initial state ok
 180 degree rejection ok
 queue cap ok

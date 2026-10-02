@@ -30,13 +30,13 @@ A classic Snake game clone written in C++17 using [Raylib](https://www.raylib.co
 
 Requirements: MSYS2 with the UCRT64 toolchain and Raylib.
 
-```
+```bash
 pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-raylib make
 ```
 
 Then, from an MSYS2 UCRT64 shell in the project folder:
 
-```
+```bash
 make help     # list the available targets
 make          # build bin/snake.exe (also copies glfw3.dll and libwinpthread-1.dll into bin/)
 make run      # build and play
@@ -60,7 +60,7 @@ Press **F1** in game to show the debug overlay: it prints the head and tail cell
 
 ## Project structure
 
-```
+```text
 SnakeGame/
 ├── include/                # public headers
 │   ├── Game.h              # state machine: menu / playing / paused / game over
