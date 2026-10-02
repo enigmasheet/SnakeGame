@@ -2,8 +2,10 @@
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/Audio.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/Audio.cpp -o build/Audio.o"},
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/Food.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/Food.cpp -o build/Food.o"},
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/Game.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/Game.cpp -o build/Game.o"},
-  {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/main.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/main.cpp -o build/main.o"},
+  {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/GameInput.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/GameInput.cpp -o build/GameInput.o"},
+  {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/GameRender.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/GameRender.cpp -o build/GameRender.o"},
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/Score.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/Score.cpp -o build/Score.o"},
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/Snake.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/Snake.cpp -o build/Snake.o"},
+  {"directory": "D:/PersonalProjects/SnakeGame", "file": "src/main.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c src/main.cpp -o build/main.o"},
   {"directory": "D:/PersonalProjects/SnakeGame", "file": "tests/logic_test.cpp", "command": "g++ -std=c++17 -Wall -Wextra -Wpedantic -Wshadow -O2 -MMD -MP -Iinclude -c tests/logic_test.cpp -o build/logic_test.o"}
 ]

@@ -15,7 +15,7 @@ drains it with a `while` loop.
 A namespace with no name; symbols declared inside have *internal linkage* — they
 exist only in that one `.cpp` file and cannot be referenced (or clash with
 something) elsewhere. Used for the shared color palette and small helpers like
-`DrawCenteredText()` in `src/Game.cpp`.
+`DrawCenteredText()` in `src/GameRender.cpp`.
 
 ### Argument vs parameter
 An **argument** is what you pass at a call site; a **parameter** is the name that
@@ -269,6 +269,8 @@ defects, not noise.
 | file streams, error handling | `include/Score.h`, `src/Score.cpp` |
 | RAII, deleted copies, `static` members | `include/Audio.h`, `src/Audio.cpp` |
 | state machine, accumulator, collisions | `include/Game.h`, `src/Game.cpp` |
+| keyboard dispatch, one branch per state | `src/GameInput.cpp` |
+| theme palette, baked board, overlays | `src/GameRender.cpp` |
 | `assert`, testable design | `tests/logic_test.cpp` |
 
 Also see [TEACHING.md](TEACHING.md) (algorithms, exercises, viva Q&A) and

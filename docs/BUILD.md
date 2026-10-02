@@ -66,10 +66,11 @@ include/*.h   src/*.cpp
 Each `.cpp` becomes one `.o` file. A change to `src/Snake.cpp` recompiles only
 `build/Snake.o`. The `-MMD -MP` flags also write a `build/Snake.d` listing the
 headers that object used, so `make` knows which objects a header edit invalidates.
-For example, editing `include/Snake.h` rebuilds three of the six objects —
-`Snake.o`, `Game.o`, and `main.o` (which pulls `Snake.h` in through `Game.h`) —
-and leaves `Food.o`, `Score.o`, and `Audio.o` alone. Editing `include/Types.h`
-rebuilds all five objects that include it; only `Audio.o` is untouched.
+For example, editing `include/Snake.h` rebuilds five of the eight objects —
+`Snake.o`, `Game.o`, `GameInput.o`, `GameRender.o`, and `main.o` (which pulls
+`Snake.h` in through `Game.h`) — and leaves `Food.o`, `Score.o`, and `Audio.o`
+alone. Editing `include/Types.h` rebuilds seven of the eight objects; only
+`Audio.o` is untouched.
 
 ### Linking
 

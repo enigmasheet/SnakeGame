@@ -4,8 +4,10 @@
  */
 
 #include "Game.h"
-#include "Types.h"
+
 #include "raylib.h"
+
+#include "Types.h"
 
 int main()
 {

@@ -7,6 +7,8 @@
 
 #include <cmath>
 
+#include "raylib.h"
+
 namespace
 {
     constexpr int SampleRate = 44100;

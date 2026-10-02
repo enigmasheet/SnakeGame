@@ -77,11 +77,18 @@ Read in this order; each file only depends on the ones above it.
 | 4 | `include/Food.h` + `src/Food.cpp` | Random spawn that retries until legal | `std::mt19937`, `std::uniform_int_distribution`, rejection sampling |
 | 5 | `include/Score.h` + `src/Score.cpp` | Persistent state with graceful failure | file streams, `std::string`, error handling |
 | 6 | `include/Audio.h` + `src/Audio.cpp` | Sounds built by arithmetic, cleaned up by a destructor | RAII, copy deletion, `static` members |
-| 7 | `include/Game.h` + `src/Game.cpp` | The state machine, timing, collisions, rendering | composition, private helpers, dispatch |
-| 8 | `tests/logic_test.cpp` | The rules proven without a window | `assert`, testable design |
+| 7 | `include/Game.h` + `src/Game.cpp` | The state machine, timing, and collision order | composition, private helpers, dispatch |
+| 8 | `src/GameInput.cpp` | One keyboard branch per state, so bindings cannot collide | `switch` on an `enum class`, input handling |
+| 9 | `src/GameRender.cpp` | Theme palette, baked board texture, HUD, and every overlay | anonymous namespace, internal linkage, file-local helpers |
+| 10 | `tests/logic_test.cpp` | The rules proven without a window | `assert`, testable design |
 
 **Suggested pacing:** files 1-2 in one session (30 min), 3-6 in one session
-(60 min), 7-8 in one session (60 min). Use the F1 overlay as you go.
+(60 min), 7-10 in one session (60 min). Use the F1 overlay as you go.
+
+`Game` is one class whose implementation is spread over three `.cpp` files:
+`Game.cpp` decides what happens, `GameInput.cpp` reads the keyboard, and
+`GameRender.cpp` draws. The header lists every method once, so the three files
+are three *views* of the same class rather than three classes.
 
 ---
 
@@ -421,7 +428,7 @@ All tuning lives in `Config` (`include/Types.h`). One edit, whole game follows.
 | Game speed | `Config::StartMoveInterval`, `MinMoveInterval`, `ScoreSpeedFactor` | Floor reached at 400 points |
 | Starting snake | `Config::InitialSnakeLength`, `Snake::Reset()` | Start cell and direction |
 | Snake / food colors | anonymous namespace in `src/Snake.cpp`, `src/Food.cpp` | Colors are RGBA 0-255 |
-| Whole theme | anonymous namespace in `src/Game.cpp` | Background, HUD, overlays |
+| Whole theme | anonymous namespace in `src/GameRender.cpp` | Background, HUD, overlays |
 | Sounds | `Audio` constructor (frequencies) and `MakeTone()` | |
 | Key bindings | `Game::HandleInput()` | One branch per state |
 | High score file | `Score` constructor | `GetApplicationDirectory()` |
@@ -525,7 +532,8 @@ Each exercise says *where to touch it* and *how to check you were right*.
     board.
 15. **What is the anonymous namespace for?** To give file-local symbols
     internal linkage. The color palette and `DrawCenteredText()` are helpers of
-    one translation unit; they cannot leak into or clash with other files.
+    one translation unit (`src/GameRender.cpp`); they cannot leak into or clash
+    with other files.
 16. **Explain the build.** `g++ -std=c++17 -Wall -Wextra -O2` compiles each
     `.cpp` into an object in `build/`, the linker combines them with the static
     `libraylib.a` into `bin/snake.exe`, and `glfw3.dll` + `libwinpthread-1.dll`
@@ -533,9 +541,10 @@ Each exercise says *where to touch it* and *how to check you were right*.
     suppresses the console window.
 17. **What does `-MMD -MP` do?** `-MMD` writes a `.d` file listing which headers
     each object used; `-MP` adds phony targets so deleting a header does not
-    break `make`. The result: editing `Snake.h` rebuilds only the three objects
-    that reach it — `Snake.o`, `Game.o`, and `main.o` (via `Game.h`) — while
-    `Food.o`, `Score.o`, and `Audio.o` stay untouched.
+    break `make`. The result: editing `Snake.h` rebuilds only the five objects
+    that reach it — `Snake.o`, `Game.o`, `GameInput.o`, `GameRender.o`, and
+    `main.o` (via `Game.h`) — while `Food.o`, `Score.o`, and `Audio.o` stay
+    untouched.
 18. **Why do the tests not need a window?** All rules were pushed into the
     entities (`Snake`, `Food`, `Score`). `Game` only orchestrates. That split is
     why `logic_test.cpp` compiles, links, and runs in a couple of seconds.

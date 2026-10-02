@@ -71,7 +71,9 @@ SnakeGame/
 │   └── Types.h             # Position struct, Direction/GameState enums, grid config
 ├── src/                    # implementations
 │   ├── main.cpp            # window setup and the game loop (input -> update -> draw)
-│   ├── Game.cpp            # input, timing, collisions, HUD, overlays
+│   ├── Game.cpp            # state machine, fixed-step timing, collision resolution
+│   ├── GameInput.cpp       # keyboard dispatch: one branch per state, F1 overlay toggle
+│   ├── GameRender.cpp      # theme palette, baked board, HUD, and every overlay
 │   ├── Snake.cpp / Food.cpp / Score.cpp / Audio.cpp
 ├── tests/
 │   └── logic_test.cpp      # headless tests for movement, collisions, spawn, timing, scoring
@@ -87,6 +89,16 @@ SnakeGame/
 ├── build/                  # generated: object and dependency files
 └── bin/                    # generated: snake.exe, DLLs, logic_test.exe, highscore.txt
 ```
+
+## Coding conventions
+
+- **Includes, in this order, blank line between groups:** own header, C++ standard library, third-party (`raylib.h`), then other project headers (`Types.h`). A translation unit includes what it uses — do not rely on a header's transitive includes.
+- **File headers:** every `.cpp`/`.h` opens with a Doxygen `/** @file … @brief … */` block that says what the file is for; public declarations in `include/` carry `@brief`, `@param`, `@return`.
+- **Style:** Allman braces, 4-space indent, no tabs, LF line endings (enforced by `.gitattributes`), no trailing whitespace.
+- **File-local constants and helpers** go in an anonymous namespace (internal linkage), never at global scope — see the color palettes in `GameRender.cpp` and `Snake.cpp`.
+- **Comments explain *why*, not *what*.** Each non-obvious decision states the reason it exists.
+- **No `using namespace`, no raw `new`/`delete`.** Entities are composed by value; the standard library covers ownership.
+- **One concern per `.cpp`:** `Game.cpp` decides, `GameInput.cpp` reads the keyboard, `GameRender.cpp` draws.
 
 ## Design notes
 
