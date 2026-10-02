@@ -67,39 +67,31 @@ alone. Editing `include/Types.h` rebuilds seven of the eight objects; only
 The blast radius, read from the `.d` files:
 
 ```mermaid
-flowchart LR
-    subgraph inc["include/"]
-        SH["Snake.h"]
-        TH["Types.h"]
-    end
-    subgraph objs["build/ (8 objects)"]
+flowchart TD
+    SH["edit Snake.h"]
+    TH["edit Types.h"]
+    subgraph both["rebuilt by either edit (5 objects)"]
         O1["Snake.o"]
         O2["Game.o"]
         O3["GameInput.o"]
         O4["GameRender.o"]
         O5["main.o"]
+    end
+    subgraph tonly["rebuilt only by Types.h (2 objects)"]
         O6["Food.o"]
         O7["Score.o"]
+    end
+    subgraph none["untouched (1 object)"]
         O8["Audio.o"]
     end
-    SH ==> O1
-    SH ==> O2
-    SH ==> O3
-    SH ==> O4
-    SH ==> O5
-    TH -.-> O1
-    TH -.-> O2
-    TH -.-> O3
-    TH -.-> O4
-    TH -.-> O5
-    TH -.-> O6
-    TH -.-> O7
+    SH --> both
+    TH --> both
+    TH --> tonly
 ```
 
-Thick edges = what a `Snake.h` edit rebuilds (5 of 8). Dotted edges = what a
-`Types.h` edit rebuilds (the same five plus `Food.o` and `Score.o` — 7 of 8).
-`Audio.o` has no edges: no chain from it reaches either header, which is why it
-survives both edits.
+`Snake.h` rebuilds five of eight; `Types.h` adds `Food.o` and `Score.o` on top
+of those, for seven of eight. `Audio.o` sits alone: no include chain from it
+reaches either header, which is why it survives both edits.
 
 ### Linking
 
